@@ -52,8 +52,11 @@ but not running.
   Akamai traffic in Art Mode.
 - The TV's resolver lists the router first and `8.8.8.8` as fallback. In normal use the TV got
   the router's answers (blocked). Whether the block also holds if the TV falls back to 8.8.8.8
-  is **not verified**: the TV's `nslookup` cannot query a specific server. Close the gap on the
-  router (redirect or block outbound DNS from the TV) rather than relying on it.
+  was not tested from the TV itself (its `nslookup` cannot query a specific server). On the
+  tested UniFi router, though, devices under a Content Filter rule have all port-53 DNS
+  redirected to the filter whatever server they ask (verified from a filtered computer), so the
+  fallback is very likely covered. Encrypted DNS (port 853) is not; a firewall rule now blocks
+  it for the TV (see docs/router.md).
 
 ## Residual risk after all steps
 

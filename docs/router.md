@@ -25,6 +25,15 @@ script treats them, 0.0.0.0 and "no such domain" as blocked. Useful extras on th
 Networks → isolate any open/guest network so it cannot reach the TV; Settings → CyberSecure →
 Intrusion Prevention.
 
+Fallback DNS on UniFi: a device covered by a Content Filter rule has all ordinary DNS (port 53,
+UDP and TCP) redirected to UniFi's filter, whatever server it asks. Verified 2026-10-25 from a
+filtered computer on the tested network: lookups sent straight to 8.8.8.8, 1.1.1.1 and 9.9.9.9
+all came back blocked (a built-in "Allow DNS UTM Filter" firewall rule is the visible sign).
+Encrypted DNS on port 853 is **not** redirected. Close that with a firewall rule: Settings →
+Policy Engine → Traffic and Firewall Rules → Advanced → Create Entry: type LAN In, action Drop,
+protocol TCP/UDP, source MAC = the TV, destination port 853, logging on. It cannot break the
+TV's normal DNS, and the log shows whether the TV ever tries encrypted DNS.
+
 ## AdGuard Home / Pi-hole / NextDNS
 
 - AdGuard Home: Filters → Custom filtering rules, one `||domain^` line per domain (covers
