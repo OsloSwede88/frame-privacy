@@ -1,7 +1,11 @@
-# Samsung TV privacy block list (domains; a domain entry should also cover its subdomains).
+# Samsung TV privacy block list. Each entry must ALSO block its subdomains
+# (e.g. samsungacr.com must catch log-config.samsungacr.com).
 # Verified 2026-10-25 against one Samsung Frame (TQ43LS03BGUXXC, EU firmware 1720.7).
-# Format: one domain per line. Works as-is for UniFi Content Filter "Blocklist", AdGuard Home,
-# Pi-hole (as a wildcard/regex or via an adlist that matches subdomains) and NextDNS denylists.
+# Format: one domain per line. Paste as-is only where a plain domain covers subdomains:
+#   UniFi Content Filter "Blocklist" (verified) and NextDNS denylist.
+# NOT as-is in Pi-hole or AdGuard Home: there a plain line can match the exact name only.
+#   Use the syntax in docs/router.md (Pi-hole regex/wildcard, AdGuard ||domain^).
+# Always verify a subdomain afterwards with tv/dns-check.sh.
 #
 # Telemetry upload (CLogger / KPI pipeline, the "TV sensor" events reported on X)
 lcprd1.samsungcloudsolution.net

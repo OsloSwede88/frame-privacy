@@ -175,7 +175,7 @@
       "contents-recognition-service.service",
       "com.samsung.tv.activity-inference-service.service"
     ],
-    "why": "systemd starts these regardless of the app registry flag; /etc/systemd/system is read-only so only runtime masks are possible, lost on a full power cut",
+    "why": "systemd starts these regardless of the app registry flag; /etc/systemd/system is read-only so only runtime masks are possible, lost on every restart (not standby)",
     "excluded": {
       "user-presence.service": "Wi-Fi CSI motion sensing. Stopping it shortly after a reboot was followed twice by the TV dropping off Wi-Fi; left running."
     }

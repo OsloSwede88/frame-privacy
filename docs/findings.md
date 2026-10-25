@@ -50,13 +50,15 @@ but not running.
   They are needed for phone casting and SmartThings; not blocked.
 - Also seen: streaming apps, Samsung's CDN for app content, and some unidentified CloudFront /
   Akamai traffic in Art Mode.
-- The router on the tested network answered the TV's DNS fallback (8.8.8.8) itself, so the
-  per-device block applied to that too. Check this on yours.
+- The TV's resolver lists the router first and `8.8.8.8` as fallback. In normal use the TV got
+  the router's answers (blocked). Whether the block also holds if the TV falls back to 8.8.8.8
+  is **not verified**: the TV's `nslookup` cannot query a specific server. Close the gap on the
+  router (redirect or block outbound DNS from the TV) rather than relying on it.
 
 ## Residual risk after all steps
 
 - The TV still runs Samsung's OS and core services; this is not a guarantee that nothing is sent.
-- Step C is lost on a full power cut until re-applied.
+- Step C is lost on every restart (not standby) until re-applied, and needs Developer Mode on to re-apply.
 - `multi-assistant-service`, sound-AI and camera-related apps remain installed (no mic open, no
   camera on this model).
 - Unidentified CDN traffic was not decoded.
