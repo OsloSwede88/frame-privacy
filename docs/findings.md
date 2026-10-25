@@ -132,26 +132,30 @@ There IS a usable on-TV boot hook, on the writable `/opt` partition (not the rea
 
 - `/opt/etc/parseinfo.sh` is run at every boot by the stock `AT-HUB.service`. It is world-writable
   and on `/opt`. On the tested 2022 Frame it confirmably runs each boot (it writes
-  `/proc/target_version`, which was populated). It carries a Samsung `##UEP…:UEP` signature line,
-  but that is a trailing shell comment and nothing observed enforces it at boot on `/opt`.
+  `/proc/target_version`, which was populated). It carries a Samsung `##UEP…:UEP` signature line.
 - The known method (used by **elithrar/samshush** on a newer Frame Pro, QN65LS03FWFXZA / fw 1301.0)
   is to **replace** this script with a wrapper that runs the saved original first, then starts a
   root job that re-applies the masks, keeping the original bytes under `/opt/usr/share/<name>`.
-  Because it only touches writable `/opt`, it avoids the rootfs remount and its brick tail.
-- Risk profile: low but not zero. `AT-HUB.service` runs late and backgrounds the script (`&`), so a
-  broken wrapper almost certainly would not block boot, and running the original first preserves its
-  normal job. The unknown is whether a given firmware enforces the UEP signature at boot; verify on
-  your own firmware with a staged install (save the original, install the wrapper, power-cycle once
-  to confirm it boots and the masks came back) and keep the restore (`startup remove`) ready. There
-  is still no at-home rescue if a boot ever did fail, so weigh it against the host-side option below.
-- Note: the sibling archive-launcher tooling (e.g. chris-ritsen/samsung-tv-root) instead keeps root
-  volatile and persists from the **host** by re-acquiring root after each reboot. That is the
-  zero-TV-write alternative.
+- **IMPORTANT, verified on the 2022 build (1720.7): UEP actively enforces script signing.** Running
+  any unsigned shell-script **file** is refused by a bash/UEP wrapper: an attempt here printed
+  `[uep][bash] the file is NOT signed!!` and the command exited non-zero. So on this firmware,
+  replacing `parseinfo.sh` with an unsigned wrapper would be **blocked at boot** (and could make
+  `AT-HUB` fail). Signing needs Samsung's key, which we do not have. So the parseinfo.sh persistence
+  method is **not usable on this firmware**. samshush's Frame Pro (1301.0) apparently does not enforce
+  this, which is why the same method works there. Check your own firmware before assuming either way.
+  Note this enforcement is file-based only: scripts piped via stdin (how the root tooling runs
+  everything) are not checked, and **registry/DB changes are not affected**, which is why the app
+  disables and the `app_onboot`/`app_preload` flags persist fine.
+- Note: the sibling archive-launcher tooling (e.g. chris-ritsen/samsung-tv-root) keeps root volatile
+  and persists from the **host** by re-acquiring root after each reboot. That is the zero-TV-write
+  alternative, and on a UEP-enforcing firmware like 1720.7 it is effectively the only option for the
+  runtime masks.
 
 Two supported persistence models, pick per risk tolerance:
 
-1. **On-TV boot hook** (above): survives reboots with no host needed; small boot-script risk; verify
-   per firmware.
+1. **On-TV boot hook** (above): survives reboots with no host needed, but only on a firmware that
+   does not enforce UEP script signing. On the tested 2022 build (1720.7) it is **blocked**; verify
+   on yours before relying on it.
 2. **Host-side re-apply** (zero TV-write risk): leave a host (a computer that is usually on) able
    to reach the TV over SDB, and after each reboot re-run `tv/runtime-masks.sh --arg apply`. Its
    cost is leaving Developer Mode on (which keeps the TV's SDB port open on the LAN) and a short
