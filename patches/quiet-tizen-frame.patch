@@ -1,0 +1,142 @@
+diff --git a/recipes/snapshot.sh b/recipes/snapshot.sh
+index 5c4147d..5a7f3cb 100644
+--- a/recipes/snapshot.sh
++++ b/recipes/snapshot.sh
+@@ -18,7 +18,16 @@ for key in db/appfw/home_appid db/appfw/startup_appid \
+     db/menu/voice/voice_activated db/menu/voice/wakeupless_status \
+     db/si_service/voice_recog_enable db/multi-assistant/prelaunch_mode; do
+     printf '%s\n' "$key"
+-    vconftool get "$key"
++    if value=$(vconftool get "$key" 2>&1); then
++        printf '%s\n' "$value"
++    elif [ "$key" = db/menu/voice/voice_activated ] && \
++         { printf '%s' "$value" | grep -q 'No such file or directory' || \
++           printf '%s' "$value" | grep -q 'Numerical result out of range'; }; then
++        printf '%s\n' 'ABSENT (confirmed on this firmware)'
++    else
++        printf '%s\n' "$value" >&2
++        exit 1
++    fi
+ done > "$D/preferences-before.txt"
+ echo "Consistent snapshots: $D"
+ echo 'Record the main-operation home app with Probe.dll before changing launcher routing.'
+diff --git a/recipes/stop-marker.sh b/recipes/stop-marker.sh
+index d3c26a9..68dd9bc 100644
+--- a/recipes/stop-marker.sh
++++ b/recipes/stop-marker.sh
+@@ -21,7 +21,7 @@ if [ "$action" = apply ]; then
+     if [ -e "$path" ]; then printf 'present\n'; else printf 'absent\n'; fi > "$saved"
+     systemctl is-active "$unit" > "$saved.active" || true
+     touch "$path"
+-    systemctl stop "$unit"
++    systemctl stop --no-block "$unit"
+ else
+     test -f "$saved"
+     case "$(cat "$saved")" in
+diff --git a/tools/build.py b/tools/build.py
+index 1a8473b..93ba9b6 100644
+--- a/tools/build.py
++++ b/tools/build.py
+@@ -14,11 +14,29 @@ def main():
+     parser.add_argument("target", choices=["payloads", "launcher", "all"])
+     parser.add_argument("--dotnet", default=os.environ.get("DOTNET", "dotnet"))
+     parser.add_argument("--framework", type=Path, default=ROOT / ".local/tv-framework")
++    parser.add_argument("--target-framework", help="Payload target, e.g. netcoreapp3.1 for a TV whose "
++                        "runtime is Microsoft.NETCore.App 3.1 (see the profile's runtime field)")
+     args = parser.parse_args()
+     jobs = []
+     if args.target in ("payloads", "all"):
++        source = ROOT / "vendor/payload-source"
++        if args.target_framework:
++            if not args.target_framework.replace(".", "").isalnum():
++                parser.error("Invalid --target-framework.")
++            # A command-line TargetFramework breaks restore with a custom intermediate path,
++            # so build from a copy whose project files name the target directly.
++            copy = ROOT / ".local/payload-source" / args.target_framework
++            shutil.rmtree(copy, ignore_errors=True)
++            shutil.copytree(source, copy)
++            for csproj in copy.glob("*.csproj"):
++                text = csproj.read_text()
++                if "<TargetFramework>net6.0</TargetFramework>" not in text:
++                    parser.error(f"Unexpected TargetFramework in {csproj.name}.")
++                csproj.write_text(text.replace("<TargetFramework>net6.0</TargetFramework>",
++                                               f"<TargetFramework>{args.target_framework}</TargetFramework>"))
++            source = copy
+         for name in ("SamsungTvArchiveRoot", "SamsungTvRootAgent"):
+-            jobs.append((ROOT / f"vendor/payload-source/{name}.csproj", "payloads", name, []))
++            jobs.append((source / f"{name}.csproj", "payloads", name + (args.target_framework or ""), []))
+     if args.target in ("launcher", "all"):
+         for name in ("Tizen.NUI", "Tizen.Applications.Common", "Tizen.System", "Tizen"):
+             if not (args.framework / f"{name}.dll").is_file():
+diff --git a/tools/tv.py b/tools/tv.py
+index 00a454a..2526ab3 100644
+--- a/tools/tv.py
++++ b/tools/tv.py
+@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "vendor"))
+ from samsung_tv_root.archive_root import probe, _check_target, _capture
+ from samsung_tv_root.sdb import SdbClient, find_sdb
+ 
+-PROFILE = json.loads((ROOT / "profiles/un75u8000ffxza-1300.9.json").read_text())
++DEFAULT_PROFILE = ROOT / "profiles/un75u8000ffxza-1300.9.json"
+ STAGE = "/home/owner/share/tmp/sdk_tools/quiet-tizen"
+ 
+ 
+@@ -48,10 +48,10 @@ def observed_model(client):
+     return rows[0][-1]
+ 
+ 
+-def check_identity(model, firmware):
+-    if model != PROFILE["model"]:
++def check_identity(model, firmware, profile):
++    if model != profile["model"]:
+         raise ValueError(f"Unsupported model {model!r}; stop and investigate a separate profile.")
+-    if firmware != PROFILE["firmware"]:
++    if firmware != profile["firmware"]:
+         raise ValueError("Supply --firmware with the exact version read from About This TV. "
+                          "Only the documented build is accepted. Do not guess this value.")
+ 
+@@ -89,6 +89,8 @@ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("--host", required=True, help="The owner's TV IPv4 address; never auto-discovered")
+     parser.add_argument("--firmware", help="Operator-verified version from the TV's About screen")
++    parser.add_argument("--profile", type=Path, default=DEFAULT_PROFILE,
++                        help="Exact model/firmware profile; defaults to the original U8000F case study")
+     parser.add_argument("--sdb", help="Path to Samsung's separately installed SDB")
+     parser.add_argument("--callback-host", help="This computer's LAN IPv4 if route detection is wrong")
+     sub = parser.add_subparsers(dest="action", required=True)
+@@ -107,6 +109,7 @@ def main():
+     push.add_argument("name", help="Simple staging filename")
+     args = parser.parse_args()
+     ipaddress.IPv4Address(args.host)
++    profile = json.loads(args.profile.read_text())
+     if args.callback_host:
+         ipaddress.IPv4Address(args.callback_host)
+     if args.sdb:
+@@ -115,13 +118,17 @@ def main():
+     model = observed_model(client)
+     print("SDB model:", model)
+     if args.action == "doctor":
++        if model != profile["model"]:
++            raise ValueError(f"Unsupported model {model!r}; stop and investigate a separate profile.")
++        if args.firmware and args.firmware != profile["firmware"]:
++            raise ValueError("The declared firmware does not match the selected exact profile.")
+         assessment = _check_target(client)
+         print("Archive-route runtime family:", assessment.runtime)
+         print(assessment.capabilities)
+         print(_capture(client, "uname -srmo; readlink -f /usr/share/dotnet.tizen/netcoreapp"))
+         print("Preflight only. Firmware must be read on the TV; root is not yet confirmed.")
+         return
+-    check_identity(model, args.firmware)
++    check_identity(model, args.firmware, profile)
+     if args.action == "push":
+         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,100}", args.name):
+             raise ValueError("Use a simple staging filename without directory components.")
+@@ -146,7 +153,7 @@ def main():
+         if len(script) > 45000:
+             raise ValueError("Script too large for the bounded command channel; split into phases.")
+         encoded = base64.b64encode(script).decode()
+-        command = f"printf '%s' {shlex.quote(encoded)} | /bin/sh -s -- " + shlex.join(args.arg)
++        command = f"printf '%s' {shlex.quote(encoded)} | base64 -d | /bin/sh -s -- " + shlex.join(args.arg)
+     else:
+         if args.arg:
+             raise ValueError("--arg requires --script.")

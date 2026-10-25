@@ -1,0 +1,183 @@
+{
+  "profile_version": 1,
+  "model": "TQ43LS03BGUXXC",
+  "firmware": "T-PTMDEUC-1720.7, BT - S",
+  "build": "T-PTMDEUC-REL-202602250226",
+  "os": "Tizen 6.5.0 (Tizen6/TV)",
+  "kernel": "Linux 5.4.77 armv7l",
+  "runtime": "Microsoft.NETCore.App 3.1.3",
+  "runtime_path": "/usr/share/dotnet/shared/Microsoft.NETCore.App/3.1.3",
+  "registry": "/opt/dbspace/.pkgmgr_parser.db",
+  "qualification": {
+    "archive_root": "tested on this device; authenticated UID/EUID 0, SMACK User, system-file hashes unchanged and per-run staging cleaned",
+    "inventory": "read-only live registry and preference inventory",
+    "cleanup_applied": "all five groups plus privacy-extras, stop markers, context markers and runtime masks; tested 2026-10-21 to 2026-10-25 on one TV",
+    "home_route_changed": "optional launcher only; not required for privacy"
+  },
+  "home_integration": {
+    "main_operation": "com.samsung.tv.csfs",
+    "home_appid": "com.samsung.tv.csfs",
+    "startup_appid": "org.tizen.tv-viewer",
+    "quiet_home_bixby_promotion_container": "not installed"
+  },
+  "groups": {
+    "advertising": {
+      "description": "Inventory-confirmed ACR, viewing-analysis, PISA and advertising app records. No cleanup was applied; this is not a network traffic audit.",
+      "app_ids": [
+        "com.samsung.tizen.samsung-analytics",
+        "com.samsung.tv.acr",
+        "com.samsung.tv.canalysis-service",
+        "com.samsung.tv.contents-recognition-dbmgr",
+        "com.samsung.tv.adagent-service",
+        "com.samsung.tv.pisa-service",
+        "org.tizen.pisa-control-service",
+        "com.samsung.tv.targeted-ad-service"
+      ]
+    },
+    "voice": {
+      "description": "Inventory-confirmed Bixby, Alexa, wake-word and voice UI app records. Disabling these stops voice control.",
+      "app_ids": [
+        "com.samsung.tv.alexa-client",
+        "com.samsung.tv.alexa-fullscreen-app",
+        "com.samsung.tv.bixby-context-client",
+        "com.samsung.tv.bixby-prov",
+        "com.samsung.tv.bixbycapsuleviewer",
+        "com.samsung.tv.mybixby",
+        "com.samsung.tv.ondevice-voice",
+        "com.samsung.tv.utterance-recommender-app",
+        "com.samsung.tv.utterance-recommender-core",
+        "com.samsung.tv.voice-instant-app",
+        "com.samsung.tv.voiceassistant-music",
+        "com.samsung.tv.wakeup-engine-alexa",
+        "com.samsung.tv.wakeup-engine-bixby",
+        "org.tizen.voice-app",
+        "org.tizen.voice-app-service",
+        "org.tizen.voice-client",
+        "org.tizen.voice-onboarding"
+      ]
+    },
+    "context": {
+      "description": "Inventory-confirmed context suggestions and content-grab app records. Related smart features may stop working.",
+      "app_ids": [
+        "com.samsung.tv.context-aware-agent",
+        "com.samsung.tv.context-aware-agent-toast-view",
+        "com.samsung.tv.context-aware-grab-control",
+        "com.samsung.tv.context-aware-server-requester",
+        "com.samsung.tv.context-aware-service",
+        "com.samsung.tv.vif",
+        "content-grab-service"
+      ]
+    },
+    "smart-extras": {
+      "description": "Inventory-confirmed SmartThings, gaming-hub, ambience-dashboard and health app records. Some integrations will become unavailable.",
+      "app_ids": [
+        "com.samsung.tizen.smartthings-client",
+        "com.samsung.tv.adplayer",
+        "com.samsung.tv.aov-dashboard",
+        "com.samsung.tv.ghdaemon",
+        "com.samsung.tv.ghservice",
+        "com.samsung.tv.smartthingsfind-daemon",
+        "com.samsung.tv.smartthingsfind-ondemand",
+        "samsunghealth-service-tv"
+      ]
+    },
+    "tv-plus": {
+      "description": "Inventory-confirmed Samsung TV Plus app record. TV Plus also has an autorun preference; snapshot it before changing either.",
+      "app_ids": [
+        "com.samsung.tv.tvplus"
+      ]
+    },
+    "privacy-extras": {
+      "description": "Registry records still enabled after the first five groups: far-field voice, Google Assistant, iACR and the COBA ad agent. Found in the 2026-10-25 audit.",
+      "app_ids": [
+        "com.samsung.tv.farfieldvoice",
+        "com.samsung.tv.google-assistant",
+        "com.samsung.tv.iacr",
+        "com.samsung.tv.coba.adagent"
+      ]
+    }
+  },
+  "pending_groups": {
+    "light-shell": {
+      "reason": "The native sidebar app is present, but browser ID from the U8000F profile is absent. Do not disable the sidebar until Home/settings routing is tested on this Frame.",
+      "app_ids": [
+        "com.samsung.tv.home.sidebar"
+      ]
+    }
+  },
+  "stop_markers": [
+    {
+      "unit": "pisa-service.service",
+      "marker": "pisa-service",
+      "group": "advertising",
+      "condition": "ConditionPathExists=!/opt/usr/share/systemd/system/pisa-service"
+    },
+    {
+      "unit": "canalysis-service.service",
+      "marker": "canalysis-daemon",
+      "group": "advertising",
+      "condition": "ConditionPathExists=!/opt/usr/share/systemd/system/canalysis-daemon"
+    },
+    {
+      "unit": "slive-provider-daemon.service",
+      "marker": "slive-provider-daemon",
+      "group": "tv-plus",
+      "condition": "ConditionPathExists=!/opt/usr/share/systemd/system/slive-provider-daemon"
+    }
+  ],
+  "preferences": [
+    {
+      "key": "db/was/preload_by_country",
+      "type": "string",
+      "value": "true"
+    },
+    {
+      "key": "db/menu/autorun_tv_plus",
+      "type": "bool",
+      "value": "1"
+    },
+    {
+      "key": "db/menu/voice/wakeupless_status",
+      "type": "int",
+      "value": "0"
+    },
+    {
+      "key": "db/si_service/voice_recog_enable",
+      "type": "bool",
+      "value": "1"
+    },
+    {
+      "key": "db/multi-assistant/prelaunch_mode",
+      "type": "bool",
+      "value": "1"
+    }
+  ],
+  "known_absent_preferences": [
+    "db/menu/voice/voice_activated"
+  ],
+  "unsupported_stop_units": [
+    "voice, context and smart-extras units have not yet been inspected on this firmware"
+  ],
+  "context_markers": [
+    {
+      "unit": "com.samsung.tv.context-aware-service.service",
+      "marker": "com.samsung.tv.context-aware-service"
+    },
+    {
+      "unit": "com.samsung.tv.context-aware-agent.service",
+      "marker": "com.samsung.tv.context-aware-agent"
+    }
+  ],
+  "runtime_masks": {
+    "units": [
+      "wifi-presence.service",
+      "kpi-logging.service",
+      "contents-recognition-service.service",
+      "com.samsung.tv.activity-inference-service.service"
+    ],
+    "why": "systemd starts these regardless of the app registry flag; /etc/systemd/system is read-only so only runtime masks are possible, lost on a full power cut",
+    "excluded": {
+      "user-presence.service": "Wi-Fi CSI motion sensing. Stopping it shortly after a reboot was followed twice by the TV dropping off Wi-Fi; left running."
+    }
+  }
+}

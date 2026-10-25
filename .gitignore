@@ -1,0 +1,9 @@
+quiet-tizen/
+.local/
+*.wgt
+.sign/
+.buildResult/
+certs/
+launcher/app/img/wall/
+launcher/source-4k/
+.DS_Store

@@ -1,0 +1,22 @@
+# Samsung TV privacy block list (domains; a domain entry should also cover its subdomains).
+# Verified 2026-10-25 against one Samsung Frame (TQ43LS03BGUXXC, EU firmware 1720.7).
+# Format: one domain per line. Works as-is for UniFi Content Filter "Blocklist", AdGuard Home,
+# Pi-hole (as a wildcard/regex or via an adlist that matches subdomains) and NextDNS denylists.
+#
+# Telemetry upload (CLogger / KPI pipeline, the "TV sensor" events reported on X)
+lcprd1.samsungcloudsolution.net
+lcprd2.samsungcloudsolution.net
+# Automatic content recognition (ACR): what is on screen, including HDMI sources
+samsungacr.com
+acr-eu-prd.samsungcloud.tv
+acr0.samsungcloudsolution.com
+# Advertising
+samsungads.com
+# Remote management (rmdemon)
+rm.samsungqbe.com
+# Smart Hub app recommendations feed (optional; Smart Hub itself still works)
+osb-apps.samsungqbe.com
+#
+# DO NOT BLOCK (breaks Smart Hub, app installs or updates):
+#   osb.samsungqbe.com, gpm.samsungqbe.com, cdn.samsungcloudsolution.com
+# Not blocked on purpose: samsungcloud.tv as a whole (Samsung TV Plus may use other hosts there).

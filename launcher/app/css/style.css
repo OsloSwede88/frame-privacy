@@ -1,0 +1,162 @@
+/* Fixed 1920x1080 canvas. Tizen 6.5 runs an older Chromium: no backdrop-filter, no :has.
+   Glass is faked with a pre-blurred copy of the wallpaper (img/wall-blur.jpg) that
+   main.js lines up behind each .glass element. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+body {
+  font-family: "SamsungOne", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+
+.walls-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; overflow: hidden;
+  background: #10202e linear-gradient(160deg, #1d3b52 0%, #10202e 55%, #2a1f33 100%); }   /* shown until wallpapers are built */
+.wall {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  background: center / cover no-repeat; opacity: 0; transition: opacity 1.4s ease;
+}
+.wall.on { opacity: 1; }
+.wall.instant { transition: none; }
+.shade {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  background:
+    radial-gradient(ellipse 900px 420px at 0 0, rgba(0,0,0,.45), rgba(0,0,0,0) 70%),
+    linear-gradient(180deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,0) 26%),
+    linear-gradient(0deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 40%);
+}
+
+/* Clock, top left */
+.clock { position: absolute; left: 112px; top: 76px; text-shadow: 0 1px 12px rgba(0,0,0,.35); }
+#time { font-size: 46px; font-weight: 300; letter-spacing: .5px; line-height: 1; }
+#date { display: none; }
+
+/* Settings pill, top right (glass like the dock) */
+.corner { position: absolute; right: 96px; top: 84px; border-radius: 36px; }
+.pill {
+  position: relative; display: flex; align-items: center;
+  height: 72px; padding: 0 32px 0 26px; border-radius: 36px;
+  border: 0; font: inherit; font-size: 28px; font-weight: 500; color: #fff;
+  background: transparent; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  transition: transform .2s ease;
+}
+.pill > svg, .pill > span { position: relative; }
+.pill svg { margin-right: 14px; }
+.pill.focused { transform: scale(1.07); color: #111; }
+.pill.focused .glass::after { background: rgba(255,255,255,.86); }
+
+/* Liquid glass, pre-rendered: a blurred, saturated copy of the wallpaper (img/wall-blur.jpg)
+   lined up behind the panel by main.js, plus a light tint, a specular sheen across the top
+   and a bright rim that fades from the top-left to the bottom-right. */
+.glass {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit;
+  background-size: 1920px 1080px;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.glass::before {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.08) 38%, rgba(255,255,255,0) 60%),
+    linear-gradient(0deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 22%);
+}
+.glass::after {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit;
+  background: rgba(255,255,255,.06);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgba(255,255,255,.65),
+    inset -1px -1px 0 rgba(255,255,255,.22),
+    inset 0 0 0 1px rgba(255,255,255,.14),
+    inset 0 0 28px rgba(255,255,255,.14);
+  transition: background .2s ease;
+}
+
+/* Dock: one wide frosted bar, equal cells, white logos centered in each */
+.dock {
+  position: absolute; left: 96px; right: 96px; bottom: 150px; height: 216px;
+  border-radius: 40px; box-shadow: 0 30px 70px rgba(0,0,0,.30);
+}
+.dock .glass::after { background: rgba(10,12,16,.40); }
+.corner .glass::after { background: rgba(10,12,16,.30); }
+#apps { position: relative; display: flex; height: 100%; padding: 16px; list-style: none; }
+.app {
+  position: relative; flex: 1 1 0; border-radius: 28px;
+  display: flex; align-items: center; justify-content: center;
+}
+.app + .app { margin-left: 8px; }
+.app img { position: relative; max-width: 150px; max-height: 64px; opacity: .92; filter: drop-shadow(0 1px 6px rgba(0,0,0,.35)); transition: transform .22s ease, opacity .22s ease; }
+/* Selected cell: a lighter pane of glass */
+.app .cell {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.24));
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.55), inset 0 0 0 1px rgba(255,255,255,.22), 0 10px 30px rgba(0,0,0,.18);
+  opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease;
+}
+.app.focused .cell { opacity: 1; transform: scale(1); }
+.app.focused img { opacity: 1; transform: scale(1.06); }
+.app.missing img, .app.missing .label { opacity: .3; }
+.app .label { position: relative; color: #fff; font: 600 30px/1 -apple-system, 'Helvetica Neue', Arial, sans-serif; letter-spacing: .01em; text-shadow: 0 1px 6px rgba(0,0,0,.35); transition: transform .22s ease; }
+.app.focused .label { transform: scale(1.06); }
+
+/* Toast */
+#toast {
+  z-index: 10;
+  position: absolute; left: 50%; top: 96px; transform: translate(-50%, -20px);
+  padding: 18px 34px; border-radius: 30px; font-size: 28px;
+  background: rgba(20,20,22,.82); box-shadow: 0 12px 30px rgba(0,0,0,.35);
+  opacity: 0; transition: opacity .2s ease, transform .2s ease;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Settings sheet */
+.overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.45); }
+.overlay[hidden] { display: none; }
+.sheet {
+  position: absolute; right: 96px; top: 180px; width: 760px; padding: 44px 48px;
+  border-radius: 40px; box-shadow: 0 24px 60px rgba(0,0,0,.4);
+}
+.sheet > * { position: relative; }
+.sheet > .glass { position: absolute; }
+.sheet h2 { font-size: 44px; font-weight: 300; }
+.sheet .hint { margin-top: 8px; font-size: 24px; opacity: .75; }
+#resolved { list-style: none; margin-top: 28px; }
+#resolved li { display: flex; justify-content: space-between; padding: 14px 0; font-size: 26px; border-top: 1px solid rgba(255,255,255,.18); }
+#resolved code { font-family: Menlo, monospace; font-size: 20px; opacity: .8; }
+
+/* Settings as a small round glass icon, like the reference's top-right icons */
+.corner { right: 112px; top: 66px; display: flex; }
+.corner .pill + .pill { margin-left: 18px; }
+.pill { width: 68px; height: 68px; padding: 0; justify-content: center; border-radius: 34px; }
+.pill span { display: none; }
+.pill svg { margin-right: 0; width: 36px; height: 36px; }
+
+/* Wallpaper sheet: auto-switch options on top, 5 x 4 thumbnails below */
+.sheet.wide { left: 50%; right: auto; top: 50%; width: 1480px; margin-left: -740px; margin-top: -440px; padding: 44px 56px 34px; }
+.sheet .glass::after { background: rgba(10,12,16,.45); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.auto { display: flex; align-items: center; }
+.auto-label { font-size: 26px; opacity: .8; margin-right: 22px; }
+#auto-opts { display: flex; list-style: none; }
+#auto-opts li {
+  height: 56px; line-height: 56px; padding: 0 26px; border-radius: 28px; font-size: 25px;
+  background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+#auto-opts li + li { margin-left: 12px; }
+#auto-opts li.current { background: rgba(255,255,255,.28); }
+#auto-opts li.focused { background: rgba(255,255,255,.9); color: #111; transform: scale(1.06); }
+#thumbs { display: flex; flex-wrap: wrap; list-style: none; margin-top: 34px; width: 1368px; }
+#thumbs li {
+  position: relative; width: 256px; height: 144px; border-radius: 18px; overflow: hidden;
+  margin: 0 22px 22px 0; transition: transform .18s ease, box-shadow .18s ease;
+}
+#thumbs li:nth-child(5n) { margin-right: 0; }
+#thumbs img { display: block; width: 256px; height: 144px; }
+#thumbs li.current::after {
+  content: ""; position: absolute; right: 12px; bottom: 12px; width: 30px; height: 30px; border-radius: 15px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.2 4.2L19 7' fill='none' stroke='%23111' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+#thumbs li.focused { transform: scale(1.08); box-shadow: 0 0 0 4px #fff, 0 16px 34px rgba(0,0,0,.45); z-index: 1; }
+.credit { font-size: 22px; opacity: .72; margin-top: 4px; height: 28px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

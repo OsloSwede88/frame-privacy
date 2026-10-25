@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>Launcher</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <div class="walls-layer">
+    <div class="wall" id="wall-a"></div>
+    <div class="wall" id="wall-b"></div>
+  </div>
+  <div class="shade"></div>
+
+  <header class="clock">
+    <div id="time">--:--</div>
+    <div id="date"></div>
+  </header>
+
+  <nav class="corner">
+    <button class="pill" id="wall-btn" aria-label="Wallpaper">
+      <div class="glass"></div>
+      <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M4 5.5h16v13H4z"/><path fill="currentColor" d="M5.5 17l4.5-5.5 3.2 3.8 2.3-2.6 3 4.3z"/><circle cx="15.8" cy="9" r="1.6" fill="currentColor"/></svg>
+    </button>
+    <button class="pill" id="settings-btn" aria-label="Settings">
+      <div class="glass"></div>
+      <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.7 7.7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    </button>
+  </nav>
+
+  <section class="dock">
+    <div class="glass"></div>
+    <ul id="apps"></ul>
+  </section>
+
+  <div id="toast"></div>
+
+  <div id="settings" class="overlay" hidden>
+    <div class="sheet">
+      <div class="glass"></div>
+      <h2>Settings</h2>
+      <p class="hint">Version 0.2. Back closes.</p>
+      <ul id="resolved"></ul>
+    </div>
+  </div>
+
+  <div id="walls" class="overlay" hidden>
+    <div class="sheet wide">
+      <div class="glass"></div>
+      <div class="sheet-head">
+        <h2>Wallpaper</h2>
+        <div class="auto">
+          <span class="auto-label">Switch automatically</span>
+          <ul id="auto-opts"></ul>
+        </div>
+      </div>
+      <ul id="thumbs"></ul>
+      <p class="credit" id="credit"></p>
+    </div>
+  </div>
+</div>
+<script src="js/apps.js"></script>
+<script src="js/wallpapers.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
