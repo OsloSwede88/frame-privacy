@@ -114,31 +114,49 @@ resumes those services' **local** processing; none of them can exfiltrate, becau
 destinations stay blocked at the router. Standby/wake does not lose the masks; only a full
 restart, power cut or firmware update does.
 
-Why there is no safe on-TV persistence:
+Why plain systemd persistence does not work (and the rootfs route is unsafe):
 
 - The only writable systemd unit paths are under `/run`, which is wiped on every boot. `/etc`
   and `/usr/lib` are on the read-only rootfs. So a persistent mask or drop-in cannot be placed
   anywhere systemd reads.
 - The four units have no `ConditionPathExists`, so the `/opt` marker-file trick (which does work
   persistently for pisa/canalysis/context-aware) cannot gate them.
-- The one writable boot hook that runs at startup, `/opt/etc/parseinfo.sh` (via `AT-HUB.service`),
-  is Samsung-signed (a `##UEP…:UEP` trailer). Do not append to signed boot scripts.
 - The rootfs is `vdfs`, mounted read-only, and **100% full**, on a device with **no dm-verity**.
   No verity means a modified rootfs would still boot, so remounting `/` read-write and editing
-  units is technically possible and is likely how some do it. We did **not** take this route:
-  `/` is full (adding files/symlinks may fail; only deletions are space-neutral), `SELP_ENABLE`
-  is in the boot args and its reaction to a changed system partition is unknown, and crucially
-  there is **no at-home recovery if it fails to boot** (SDB is network-only and only exists once
-  booted; the TV's USB ports are host-mode, not an SDB device port, so a cable to a computer is
-  not a rescue path). Small chance, large irreversible downside.
-- The published root tooling agrees: the archive-launcher projects keep root **volatile** on
-  purpose, never modify TV system files, and persist from the **host** by re-acquiring root
-  after each reboot (e.g. chris-ritsen/samsung-tv-root ships a host-side systemd service for
-  exactly this). On-TV "boot-time self-root" exists only in forks and is the riskier path.
+  units is technically possible. Do **not** take this route: `/` is full, `SELP_ENABLE` is in the
+  boot args and its reaction to a changed system partition is unknown, and there is **no at-home
+  recovery if it fails to boot** (SDB is network-only and only exists once booted; the TV's USB
+  ports are host-mode, not an SDB device port, so a cable to a computer is not a rescue path).
 
-Supported persistence model: **host-side re-apply.** Leave the host (a computer that is usually
-on) able to reach the TV over SDB, and after each TV reboot re-run `tv/runtime-masks.sh --arg apply`.
-This has zero TV-write risk. Its cost is leaving Developer Mode on (which keeps the TV's SDB port
-open on the LAN) and a short post-boot window where the services run locally but still cannot
-send anything out. If you do not set this up, the only consequence of a reboot is that those four
-services process locally until the next manual re-apply; nothing leaves the network in the meantime.
+There IS a usable on-TV boot hook, on the writable `/opt` partition (not the read-only rootfs):
+
+- `/opt/etc/parseinfo.sh` is run at every boot by the stock `AT-HUB.service`. It is world-writable
+  and on `/opt`. On the tested 2022 Frame it confirmably runs each boot (it writes
+  `/proc/target_version`, which was populated). It carries a Samsung `##UEP…:UEP` signature line,
+  but that is a trailing shell comment and nothing observed enforces it at boot on `/opt`.
+- The known method (used by **elithrar/samshush** on a newer Frame Pro, QN65LS03FWFXZA / fw 1301.0)
+  is to **replace** this script with a wrapper that runs the saved original first, then starts a
+  root job that re-applies the masks, keeping the original bytes under `/opt/usr/share/<name>`.
+  Because it only touches writable `/opt`, it avoids the rootfs remount and its brick tail.
+- Risk profile: low but not zero. `AT-HUB.service` runs late and backgrounds the script (`&`), so a
+  broken wrapper almost certainly would not block boot, and running the original first preserves its
+  normal job. The unknown is whether a given firmware enforces the UEP signature at boot; verify on
+  your own firmware with a staged install (save the original, install the wrapper, power-cycle once
+  to confirm it boots and the masks came back) and keep the restore (`startup remove`) ready. There
+  is still no at-home rescue if a boot ever did fail, so weigh it against the host-side option below.
+- Note: the sibling archive-launcher tooling (e.g. chris-ritsen/samsung-tv-root) instead keeps root
+  volatile and persists from the **host** by re-acquiring root after each reboot. That is the
+  zero-TV-write alternative.
+
+Two supported persistence models, pick per risk tolerance:
+
+1. **On-TV boot hook** (above): survives reboots with no host needed; small boot-script risk; verify
+   per firmware.
+2. **Host-side re-apply** (zero TV-write risk): leave a host (a computer that is usually on) able
+   to reach the TV over SDB, and after each reboot re-run `tv/runtime-masks.sh --arg apply`. Its
+   cost is leaving Developer Mode on (which keeps the TV's SDB port open on the LAN) and a short
+   post-boot window where the services run locally but still cannot send anything out.
+
+If you set up neither, the only consequence of a reboot is that those four services process locally
+until the next manual re-apply; nothing leaves the network in the meantime, because the router
+block is permanent and router-side.
