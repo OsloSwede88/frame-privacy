@@ -97,3 +97,48 @@ it disables Samsung's remote phone-support: mask the unit (lost on reboot, like 
   camera on this model).
 - Unidentified CDN traffic was not decoded.
 - Firmware updates can re-enable things. Re-run `tv/status.sh` after an update.
+
+## Persistence across reboots (why on-TV masks are volatile, and what to do)
+
+Investigated 2026-10-25. Short version: the step-C runtime masks (and the remote-management mask)
+cannot be made persistent on the TV by any safe method, and that is by design on this platform.
+Do not try to make them persistent by modifying the TV. Use the router block as the permanent
+layer, and if you want the services kept down across reboots, re-apply from the host.
+
+What a full reboot loses: only the runtime masks on `wifi-presence`, `kpi-logging`,
+`contents-recognition-service`, `activity-inference-service` (and the `remote-management` mask,
+which is moot because rmdemon stays dead without its trigger files). Everything else persists:
+the whole router layer, every app-registry disable, the context-aware / pisa / canalysis stop
+markers (Samsung's own `/opt` marker mechanism), and the menu toggles. A reboot therefore only
+resumes those services' **local** processing; none of them can exfiltrate, because their
+destinations stay blocked at the router. Standby/wake does not lose the masks; only a full
+restart, power cut or firmware update does.
+
+Why there is no safe on-TV persistence:
+
+- The only writable systemd unit paths are under `/run`, which is wiped on every boot. `/etc`
+  and `/usr/lib` are on the read-only rootfs. So a persistent mask or drop-in cannot be placed
+  anywhere systemd reads.
+- The four units have no `ConditionPathExists`, so the `/opt` marker-file trick (which does work
+  persistently for pisa/canalysis/context-aware) cannot gate them.
+- The one writable boot hook that runs at startup, `/opt/etc/parseinfo.sh` (via `AT-HUB.service`),
+  is Samsung-signed (a `##UEP…:UEP` trailer). Do not append to signed boot scripts.
+- The rootfs is `vdfs`, mounted read-only, and **100% full**, on a device with **no dm-verity**.
+  No verity means a modified rootfs would still boot, so remounting `/` read-write and editing
+  units is technically possible and is likely how some do it. We did **not** take this route:
+  `/` is full (adding files/symlinks may fail; only deletions are space-neutral), `SELP_ENABLE`
+  is in the boot args and its reaction to a changed system partition is unknown, and crucially
+  there is **no at-home recovery if it fails to boot** (SDB is network-only and only exists once
+  booted; the TV's USB ports are host-mode, not an SDB device port, so a cable to a computer is
+  not a rescue path). Small chance, large irreversible downside.
+- The published root tooling agrees: the archive-launcher projects keep root **volatile** on
+  purpose, never modify TV system files, and persist from the **host** by re-acquiring root
+  after each reboot (e.g. chris-ritsen/samsung-tv-root ships a host-side systemd service for
+  exactly this). On-TV "boot-time self-root" exists only in forks and is the riskier path.
+
+Supported persistence model: **host-side re-apply.** Leave the host (a computer that is usually
+on) able to reach the TV over SDB, and after each TV reboot re-run `tv/runtime-masks.sh --arg apply`.
+This has zero TV-write risk. Its cost is leaving Developer Mode on (which keeps the TV's SDB port
+open on the LAN) and a short post-boot window where the services run locally but still cannot
+send anything out. If you do not set this up, the only consequence of a reboot is that those four
+services process locally until the next manual re-apply; nothing leaves the network in the meantime.
