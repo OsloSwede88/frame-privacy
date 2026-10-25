@@ -44,19 +44,55 @@ capture device open; ACR, canalysis (its on-screen logo model was on disk but no
 ad agent and targeted ads disabled; remote management (`rmdemon`, `rm.samsungqbe.com`) installed
 but not running.
 
+## Remote management (rmdemon), decompiled
+
+The service `remote-management.service` runs `/usr/bin/rmdemon`, Samsung's remote-support daemon.
+It is one of the things the X thread flags. On the tested TV, how it is gated:
+
+- The unit is `Type=dbus` (bus name `org.tizen.GDBus.RemoteManagement`) with two start conditions,
+  either of which must hold, or systemd skips it:
+  `ConditionPathExists=|/opt/usr/apps/org.tizen.remote-management/tmp/RMStateFile` (a saved
+  "seamless" session) **or** `ConditionPathExists=|/tmp/rmDaemonRun` (the on-screen UI asked for a
+  session; it is deleted right after start). Both files were **absent**, so `ConditionResult=no`
+  and the daemon was dead even though the boot target that wants it was active. No capture
+  artifacts (`/tmp/rm_networkpacket`) existed: it had never run a dump here. The owner had never
+  enabled the unit in `/etc`.
+- So it is **not** an always-on packet logger. It runs only during a remote-support session, which
+  starts with an on-TV PIN flow (the binary has `PinAuthorization` / `PinRequesting` and verifies
+  the PIN against the server).
+- What it can do once running, as operator-issued commands, not autonomous background work:
+  `captureScreen`, remote mouse, and a network packet dump. The dump path is real: the binary
+  calls `runTcpdumpWithArgs`, `tcpdump` is present on the TV (`/usr/bin/tcpdump`), and output goes
+  to `/tmp/rm_networkpacket/dump.pcap` then `/tmp/networkpacket.tar.bz2`. Decompiling
+  `CommandRmSetFiledataSave::startNetworkPacketDump` (radare2): it loads its config and runs the
+  dump with **no per-command consent check**; the only gate is session start. Its callers are
+  `performJob` (a received command) and `RmStateMachine::SeamlessConnection::doJob`.
+- Network gate: its server `rm.samsungqbe.com` is on the block list, so PIN verification and
+  upload fail even if it ran.
+
+Residual exposure is therefore an authorized-session one: during a remote-support session the
+operator could pull a screen capture or packet dump without a second prompt. Optional extra, since
+it disables Samsung's remote phone-support: mask the unit (lost on reboot, like step C):
+`tv exec --command 'systemctl mask --runtime remote-management.service'` (undo: `unmask --runtime`).
+
 ## Network
 
 - Persistent connections remain to Samsung push (AWS, port 5229) and SmartThings (AWS, 443).
   They are needed for phone casting and SmartThings; not blocked.
 - Also seen: streaming apps, Samsung's CDN for app content, and some unidentified CloudFront /
   Akamai traffic in Art Mode.
-- The router on the tested network answered the TV's DNS fallback (8.8.8.8) itself, so the
-  per-device block applied to that too. Check this on yours.
+- The TV's resolver lists the router first and `8.8.8.8` as fallback. In normal use the TV got
+  the router's answers (blocked). Whether the block also holds if the TV falls back to 8.8.8.8
+  was not tested from the TV itself (its `nslookup` cannot query a specific server). On the
+  tested UniFi router, though, devices under a Content Filter rule have all port-53 DNS
+  redirected to the filter whatever server they ask (verified from a filtered computer), so the
+  fallback is very likely covered. Encrypted DNS (port 853) is not; a firewall rule now blocks
+  it for the TV (see docs/router.md).
 
 ## Residual risk after all steps
 
 - The TV still runs Samsung's OS and core services; this is not a guarantee that nothing is sent.
-- Step C is lost on a full power cut until re-applied.
+- Step C is lost on every restart (not standby) until re-applied, and needs Developer Mode on to re-apply.
 - `multi-assistant-service`, sound-AI and camera-related apps remain installed (no mic open, no
   camera on this model).
 - Unidentified CDN traffic was not decoded.

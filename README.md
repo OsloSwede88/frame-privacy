@@ -46,7 +46,7 @@ What the audit found (details and evidence in [docs/findings.md](docs/findings.m
 | [blocklist/](blocklist/samsung-tv-privacy.txt) | Domains to block, plus ones you must not block |
 | [docs/router.md](docs/router.md) | UniFi, AdGuard Home, Pi-hole, NextDNS |
 | [docs/findings.md](docs/findings.md) | What the tested TV actually does |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | Wi-Fi drops, SDB errors, power cuts, undo |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Wi-Fi drops, SDB errors, restarts, undo |
 | [tv/](tv/) | Scripts run on the TV through quiet-tizen: status, DNS check, service masks, preferences |
 | [profiles/](profiles/) | Exact model/firmware profile with the app IDs and service names |
 | `setup.sh`, [patches/](patches/) | Fetch quiet-tizen at a pinned commit and apply the Frame patch |

@@ -28,13 +28,26 @@ Reset the SDB connection: `sdb disconnect TV_IP:26101; sdb kill-server; sdb conn
 The payload was built for the wrong .NET runtime. The Frame uses .NET Core 3.1:
 `python3 tools/build.py payloads --target-framework netcoreapp3.1`.
 
-## After a power cut
+## After any restart
 
-Step C (runtime masks) is gone. Run `tv exec --script ../tv/runtime-masks.sh --arg apply`, then
-`--arg status`. Everything else persists.
+Step C (runtime masks) lives in `/run`, which is emptied on every restart: a power cut, a
+firmware update, a restart from the menu or a long press on the power button. Standby and wake
+keep it. The tested TV also restarted on its own during testing, so check rather than assume:
+`tv exec --script ../tv/runtime-masks.sh --arg status` (the uptime line shows a restart), then
+`--arg apply` if needed. Everything else persists.
 
 ## Undo everything
 
-In reverse order: `runtime-masks.sh restore`; `stop-marker.sh restore` for each marker;
-`frame-restore-features.sh SNAPSHOT`; each registry plan's `restore.sh` (newest first). Remove
-the router rule. Turn the menu toggles back on if wanted.
+Registry flags first, so services that get restarted are allowed to run (the same order
+quiet-tizen's `stop-marker.sh` expects):
+
+1. Each registry plan's `restore.sh`, newest plan first.
+2. `frame-restore-features.sh SNAPSHOT`, with the snapshot name used for `frame-disable-features.sh`.
+3. `recipes/stop-marker.sh restore UNIT MARKER SNAPSHOT` for each marker, each with the snapshot
+   name it was applied with (steps A3 and B).
+4. `runtime-masks.sh restore` (or simply restart the TV).
+5. Remove the router rule, and turn the menu toggles back on if wanted.
+
+This repo's scripts (steps 2 and 4) are safe to re-run if one stops part-way. quiet-tizen's
+plan and marker scripts (steps 1 and 3) deliberately refuse when the state is no longer what they
+recorded; if one fails, check `tv/status.sh` before re-running anything.

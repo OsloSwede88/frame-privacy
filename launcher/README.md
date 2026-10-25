@@ -31,6 +31,12 @@ never part of this repository.
 Remote: left/right to pick an app, OK to open, up for the wallpaper and settings buttons, Back
 opens the normal TV view.
 
+Permissions are kept minimal: only `application.launch`, no network access (no `<access>`
+element) and a Content-Security-Policy that allows only the app's own files. After installing,
+check that your apps' cards are not greyed out. If they all are, the TV refused to list installed
+apps (`getAppsInfo`); open the settings sheet (up, right, OK) to see which ids were found, and
+add `<tizen:privilege name="http://tizen.org/privilege/application.info"/>` to `config.xml`.
+
 ## Start it automatically (optional, needs root)
 
 ### Requirements

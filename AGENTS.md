@@ -51,7 +51,9 @@ block" hosts still resolve, then have the owner open Smart Hub and one streaming
 
 Check whether the TV also gets an IPv6 DNS server or a fallback such as 8.8.8.8 (with root:
 `cat /etc/resolv.conf`). A per-device rule must catch those too, or the router must redirect
-outbound DNS.
+or block outbound DNS (port 53, and 853 for DNS over TLS) from the TV. `tv/dns-check.sh` cannot
+prove this part: the TV's nslookup always uses its normal resolver, so it shows what the TV gets
+in everyday use only. Verify the fallback from the router side (its DNS or firewall log).
 
 ## Phase 3 (Tier 2): access
 
@@ -85,6 +87,8 @@ run one session at a time, and never restart the TV inside a session.
 
 For each step: fresh snapshot with a new name, generate or write the undo, save the undo on the
 TV, apply, verify with `tv/status.sh`, ask the owner to check picture/sound/apps if relevant.
+Keep a log in `.local/steps.txt` of which snapshot name each step used: every undo takes the
+same name its step was applied with (one name per stop marker, too).
 
 | Step | What | How | Persists after restart? |
 |---|---|---|---|
@@ -92,7 +96,7 @@ TV, apply, verify with `tv/status.sh`, ask the owner to check picture/sound/apps
 | A2 | Preferences (voice recognition, prelaunch, TV Plus autorun, preload) | `../tv/frame-disable-features.sh SNAPSHOT` (undo: `frame-restore-features.sh`) | Yes |
 | A3 | Stop markers for `pisa-service`, `canalysis-daemon`, `slive-provider-daemon` | `recipes/stop-marker.sh apply UNIT MARKER SNAPSHOT` per profile `stop_markers` | Yes |
 | B | Context-aware service and agent | `recipes/stop-marker.sh` with the pairs in profile `context_markers` | Yes |
-| C | `wifi-presence` (LAN ARP scans), `kpi-logging`, `contents-recognition-service`, `activity-inference` | `../tv/runtime-masks.sh apply` | **No**: re-run after a full power cut |
+| C | `wifi-presence` (LAN ARP scans), `kpi-logging`, `contents-recognition-service`, `activity-inference` | `../tv/runtime-masks.sh apply` | **No**: lost on every restart, re-run after one |
 
 Important: the registry flags in step A do **not** stop services that systemd starts on its
 own. That is why B and C exist. Always confirm with `status.sh`, not the registry.
@@ -102,17 +106,26 @@ tested TV, stopping it shortly after a restart was followed twice by the TV losi
 
 ## Phase 6: verify after a restart
 
-Have the owner restart the TV (and separately, try standby and wake). Then: `status.sh`,
-`runtime-masks.sh status` (expect C to be gone after a full power cut: re-apply),
-`dns-check.sh`, and ask the owner to confirm picture, HDMI, sound, remote, Art Mode and their
-apps. If the TV drops off Wi-Fi, see `docs/troubleshooting.md`.
+Have the owner restart the TV (and separately, try standby and wake). After the restart,
+step C is gone by design: confirm A, A2, A3 and B survived with `status.sh`, then re-apply C
+with `runtime-masks.sh apply` and confirm with `runtime-masks.sh status`. After standby and
+wake, C should still be in place. Run `dns-check.sh` (it must end with `ALL OK`), and ask the
+owner to confirm picture, HDMI, sound, remote, Art Mode and their apps. If the TV drops off
+Wi-Fi, see `docs/troubleshooting.md`.
 
 ## Phase 7: hand over
 
 Give the owner: what changed, what was verified, what is not covered (see "Residual" in
-`docs/findings.md`), the undo commands, and the one recurring task (re-apply step C after a
-power cut). Keep their backups under `.local/` and on the TV under
+`docs/findings.md`), the undo steps in order (`docs/troubleshooting.md`), and the one recurring
+task (re-apply step C after a restart). Keep their backups under `.local/` and on the TV under
 `/opt/usr/share/quiet-tizen-backups/`.
+
+Then ask about Developer Mode. Leaving it on keeps SDB (the developer connection) open to the
+computer whose IP was entered as Host PC IP, and is needed to re-apply step C. Turning it off
+(Apps → App Settings → `12345` → Developer Mode Off, then restart) closes that door; every
+change except step C persists, and C is then gone until Developer Mode is turned on again.
+Recommend turning it off unless they will re-apply C after restarts. Either way, set Host PC IP
+only to a computer they control.
 
 ## Optional: the launcher
 
