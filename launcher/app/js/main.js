@@ -211,13 +211,15 @@
     paintWalls();
   }
 
-  function openTVView() {
-    if (!onTV) return toast('Back: would open the TV viewer');
+  function openBack() {
+    // Back from the dock opens LAUNCHER_BACK_TARGET (default: Samsung Smart Hub). See apps.js.
+    var target = window.LAUNCHER_BACK_TARGET || 'com.samsung.tv.csfs';
+    if (!onTV) return toast('Back: would open ' + target);
     try {
-      tizen.application.launch('org.tizen.tv-viewer', function () {}, function (err) {
-        toast('TV viewer: ' + err.name + ' ' + err.message);
+      tizen.application.launch(target, function () {}, function (err) {
+        toast('Back: ' + err.name + ' ' + err.message);
       });
-    } catch (e) { toast('TV viewer: ' + e.message); }
+    } catch (e) { toast('Back: ' + e.message); }
   }
 
   // ---- keys ----
@@ -234,7 +236,7 @@
       else if (k === KEY.RIGHT) index = Math.min(APPS.length - 1, index + 1);
       else if (k === KEY.UP) row = 'top';
       else if (k === KEY.ENTER) launch(APPS[index]);
-      else if (k === KEY.BACK || k === KEY.ESC) openTVView();
+      else if (k === KEY.BACK || k === KEY.ESC) openBack();
     } else {
       if (k === KEY.LEFT) topIndex = Math.max(0, topIndex - 1);
       else if (k === KEY.RIGHT) topIndex = Math.min(topBtns.length - 1, topIndex + 1);

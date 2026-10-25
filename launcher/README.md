@@ -29,7 +29,8 @@ never part of this repository.
    message there.
 
 Remote: left/right to pick an app, OK to open, up for the wallpaper and settings buttons, Back
-opens the normal TV view.
+opens Samsung Smart Hub. Change the Back target in `app/js/apps.js` (`LAUNCHER_BACK_TARGET`),
+e.g. to `org.tizen.tv-viewer` for the live TV source instead.
 
 Permissions are kept minimal: only `application.launch`, no network access (no `<access>`
 element) and a Content-Security-Policy that allows only the app's own files. After installing,
@@ -93,14 +94,27 @@ Confirm both app selectors say `FrmLnchr01.FrameLauncher` and auto-start reads
 `1`. A successful readback proves the settings were stored; it does not prove
 the launcher starts correctly after a reboot.
 
+On a cold boot the TV shows its live source (e.g. aerial) for a couple of seconds before the
+launcher foregrounds, because the TV brings up its base TV layer before the app framework starts
+the launcher. Marking the launcher to launch at boot and stay preloaded noticeably shortens that
+flash (persistent, in the writable registry, reversible by setting both back to `false`):
+
+```sh
+tv exec --command 'sqlite3 -bail /opt/dbspace/.pkgmgr_parser.db "UPDATE package_app_info SET app_onboot=\"true\", app_preload=\"true\" WHERE app_id=\"FrmLnchr01.FrameLauncher\";"'
+```
+
+It does not fully remove the flash: the base TV layer still appears first, and eliminating that
+would need boot-sequence changes on the read-only, signed system partition (not worth the brick
+risk). Only cold boots are affected; waking from standby/Art Mode is not.
+
 ### Test the result
 
 1. Use the TV's normal full-restart procedure. Standby/wake alone is not a
    cold-start test.
 2. Confirm the custom launcher appears, navigation works, and Home still
    returns to it.
-3. Press Back from the launcher and confirm the Samsung TV viewer opens if
-   that is the launcher's configured Back behavior.
+3. Press Back from the launcher and confirm it opens your configured `LAUNCHER_BACK_TARGET`
+   (Smart Hub by default).
 4. Test the apps, inputs, and settings you rely on.
 5. Compare startup to a baseline using the same restart procedure. Record
    timings or describe the visible difference; don't infer a speedup from the
