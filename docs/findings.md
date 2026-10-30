@@ -44,6 +44,43 @@ capture device open; ACR, canalysis (its on-screen logo model was on disk but no
 ad agent and targeted ads disabled; remote management (`rmdemon`, `rm.samsungqbe.com`) installed
 but not running.
 
+## Further app-level debloat: HbbTV and screen-mirroring (2026-10-30)
+
+Disabled in the package registry (`package_app_info.app_disable='true'`, with `app_onboot` and
+`app_autorestart` set false). Persistent across reboot, reversible by setting the flags back.
+
+| App id | What it is |
+|---|---|
+| `org.tizen.hbbtv`, `org.tizen.hbbtv-service` | HbbTV: broadcast-delivered interactive apps over DVB/aerial, and a known viewing-tracking channel. Held ~66 MB plus a ~26 MB web process. |
+| `com.samsung.tv.multiscreen`, `com.samsung.tv.coba.multiscreen`, `com.samsung.tv.multiviewsetupapp` | Multi View / Smart View: show two sources at once, mirror a phone. ~71 MB resident. |
+| `org.tizen.ScreenMirroring-app-tv` | The Wi-Fi Direct / Miracast mirroring receiver. |
+
+AirPlay (a separate receiver) was deliberately left enabled.
+
+Freed ~209 MB of live RAM (714 → 923 MB available at idle). Two small stubs remain and are inert:
+`hbbtv_service` (~4 MB, restarted by the systemd `hbbtv-service.path` unit but can do nothing
+without the disabled app) and `mirroring-recog` (~4.6 MB).
+
+How the disable holds against respawn: on this firmware `amd` (the Application Management Daemon)
+refuses to launch an app whose `app_disable` is true, even when a service, a watcher script or
+`app_launcher -s` asks for it, so the heavy app stays down. What a registry disable does **not**
+stop is a systemd `.path`/`.service` that starts a lightweight daemon directly; silencing that
+would need a runtime mask (volatile, like step C) and was judged not worth it for a few MB of
+inert stub. App ids differ by model: read yours with `sdb shell 0 applist` before disabling.
+
+Caveat: here the RAM is headroom, not a fix. This TV idles with 700+ MB free and is not
+memory-constrained; treat app debloat as privacy and tidiness, not a speed-up.
+
+## The "kill Samsung Home" RAM trick, and why launcher-as-Home makes it moot
+
+Some tools (e.g. `andrearicci93/vetro`) reclaim RAM by killing Samsung's Home shell
+`com.samsung.tv.csfs` (~150 MB on their test TV) while a replacement launcher is shown, re-killing
+it after each Home press. That is needed because their launcher runs *beside* Samsung Home. If
+instead you make the launcher the actual `home_appid` (what the optional launcher in this repo
+does), `csfs` is never kept resident, so there is nothing to kill. Verified on the tested Frame:
+with the custom launcher as Home, no `csfs` process existed and ~714 MB was free at idle. The
+launcher-as-Home approach already captures that win.
+
 ## Remote management (rmdemon), decompiled
 
 The service `remote-management.service` runs `/usr/bin/rmdemon`, Samsung's remote-support daemon.
@@ -160,6 +197,15 @@ Two supported persistence models, pick per risk tolerance:
    to reach the TV over SDB, and after each reboot re-run `tv/runtime-masks.sh --arg apply`. Its
    cost is leaving Developer Mode on (which keeps the TV's SDB port open on the LAN) and a short
    post-boot window where the services run locally but still cannot send anything out.
+
+Update (2026-10-30): a **signed on-boot app** is a third route, and it is consistent with the UEP
+finding rather than a contradiction of it. `andrearicci93/vetro` persists host-free on some
+1720.7-family TVs by shipping a signed Tizen app that re-acquires UID-0 locally after each boot
+(the chris-ritsen SDB-local method) and then re-applies state through its own process. UEP blocks
+unsigned script *files*, not a signed app that re-roots and writes via the registry or stdin, which
+is exactly why the unsigned `parseinfo.sh` wrapper is blocked while this is not. It is unverified on
+this exact build (`PTMDEUC-1720.7`); vetro's confirmed 1720.7 reports are other vendor prefixes, so
+test before relying on it.
 
 If you set up neither, the only consequence of a reboot is that those four services process locally
 until the next manual re-apply; nothing leaves the network in the meantime, because the router

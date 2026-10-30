@@ -7,9 +7,17 @@ Seen on the tested TV on 25 October 2026. Two causes were found, both handled in
 1. **`user-presence` stopped shortly after boot.** Twice, the Wi-Fi dropped within minutes of
    stopping it on a freshly restarted TV. It uses the Wi-Fi chip for motion sensing. It is now
    left running; `tv/runtime-masks.sh` does not touch it. If you stopped it, restart the TV.
-2. **Roaming to a far access point.** With several access points, the TV joined one at
-   -84 dBm and kept failing. Lock the TV to the access point with the best signal (UniFi:
-   client → Settings → Lock to Access Point) and give it a fixed IP in the router.
+2. **Weak or lopsided Wi-Fi signal.** The Frame's antenna sits behind a metal back flush to the
+   wall, so it often reads weak even at the nearest access point. Two sub-cases:
+   - *It roams to a far AP.* With several APs, the TV joined one at -84 dBm and kept failing. If a
+     closer AP exists, lock the TV to it (UniFi: client → Settings → Lock to Access Point) and
+     give it a fixed IP in the router.
+   - *It reads weak at its closest AP* (on the tested Frame, -71 dBm with "AP/Client Signal
+     Balance: Poor" on UniFi, even when it is already on the nearest unit). Locking to an AP does
+     **not** help here, it just pins a weak link. The durable fix is to move the TV to **2.4 GHz**
+     (far better through walls and distance; a TV needs only ~25 Mbps) or to **wire it** (Ethernet,
+     powerline or MoCA). On the tested Frame, removing Lock-to-AP (keeping the fixed IP) was the
+     first step; if drops continue, 2.4 GHz or wired is the real fix, not AP selection.
 
 Keep the TV's own IP settings on automatic; set the fixed address in the router instead.
 
