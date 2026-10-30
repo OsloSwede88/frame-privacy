@@ -9,7 +9,7 @@
 set -u
 test "$(id -u)" = 0
 action=${1:?apply, restore or status}
-UNITS="wifi-presence.service kpi-logging.service contents-recognition-service.service com.samsung.tv.activity-inference-service.service"
+UNITS="wifi-presence.service kpi-logging.service contents-recognition-service.service com.samsung.tv.activity-inference-service.service mirroring-recognition-manager.service"
 fail=0
 case "$action" in
 apply)

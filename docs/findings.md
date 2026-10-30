@@ -57,9 +57,14 @@ Disabled in the package registry (`package_app_info.app_disable='true'`, with `a
 
 AirPlay (a separate receiver) was deliberately left enabled.
 
-Freed ~209 MB of live RAM (714 → 923 MB available at idle). Two small stubs remain and are inert:
-`hbbtv_service` (~4 MB, restarted by the systemd `hbbtv-service.path` unit but can do nothing
-without the disabled app) and `mirroring-recog` (~4.6 MB).
+Freed ~209 MB of live RAM (714 → 923 MB available at idle). Two small daemons are not apps, so the
+registry disable does not reach them: `hbbtv_service` (~4 MB, restarted by the systemd
+`hbbtv-service.path` unit, but inert because the HbbTV app it would launch is disabled) and
+`mirroring-recognition-manager` (~4.6 MB, the Miracast/Smart View recognition daemon, a LAN
+listener). The mirroring one is a systemd service, so it is masked with the group-C runtime masks
+(`tv/runtime-masks.sh`, volatile, re-applied after each reboot) rather than disabled in the
+registry. The hbbtv stub is left as-is: inert, and masking its `.path` unit would be more volatile
+maintenance than a ~4 MB dormant daemon is worth.
 
 How the disable holds against respawn: on this firmware `amd` (the Application Management Daemon)
 refuses to launch an app whose `app_disable` is true, even when a service, a watcher script or
