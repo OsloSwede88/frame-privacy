@@ -4,6 +4,4 @@ quiet-tizen/
 .sign/
 .buildResult/
 certs/
-launcher/app/img/wall/
-launcher/source-4k/
 .DS_Store

@@ -7,7 +7,7 @@
 # and writes app/js/wallpapers.js. Re-run after editing the tsv; downloads are cached.
 set -e
 cd ${0:A:h}/..
-UA='FrameLauncher/0.2 (personal TV wallpaper picker; https://github.com/)'
+UA='FrameLauncher/0.2 (personal TV wallpaper picker; https://lovvik.no)'
 mkdir -p source-4k app/img/wall
 js='window.WALLPAPERS = ['
 tail -n +2 tools/wallpapers.tsv | while IFS=$'\t' read -r id title file license artist; do

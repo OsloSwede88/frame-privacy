@@ -10,8 +10,7 @@ body {
 }
 #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
 
-.walls-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; overflow: hidden;
-  background: #10202e linear-gradient(160deg, #1d3b52 0%, #10202e 55%, #2a1f33 100%); }   /* shown until wallpapers are built */
+.walls-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; overflow: hidden; }
 .wall {
   position: absolute; top: 0; right: 0; bottom: 0; left: 0;
   background: center / cover no-repeat; opacity: 0; transition: opacity 1.4s ease;
@@ -85,19 +84,33 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .app + .app { margin-left: 8px; }
-.app img { position: relative; max-width: 150px; max-height: 64px; opacity: .92; filter: drop-shadow(0 1px 6px rgba(0,0,0,.35)); transition: transform .22s ease, opacity .22s ease; }
+/* No transform/filter animation on the logo itself: animating a filtered image re-rasterises
+   every frame on the TV's GPU and is the main cause of sluggish dock navigation. The cell
+   (promoted to its own layer below) carries the focus animation instead. */
+.app img { position: relative; max-width: 150px; max-height: 64px; opacity: .92; filter: drop-shadow(0 1px 6px rgba(0,0,0,.35)); transition: opacity .18s ease; }
+.app.t-netflix img { max-height: 50px; }
+.app.t-prime img { max-width: 180px; max-height: 70px; }
+.app.t-apple img { max-height: 54px; }
+.app.t-nrk img { max-height: 46px; }
+.app.t-youtube img { max-height: 50px; }
+.app.t-disney img { max-width: 160px; max-height: 92px; }   /* taller: the official logo has an arc above the wordmark */
+.app.t-max img { max-height: 44px; }
+.app.t-viaplay img { max-height: 44px; }
+.app.t-sky img { max-width: 180px; max-height: 44px; }
+.app.t-paramount img { max-height: 58px; }
+.app.t-tv2 img { max-height: 54px; }
+.app.t-spotify img { max-height: 48px; }
 /* Selected cell: a lighter pane of glass */
 .app .cell {
   position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit;
   background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.24));
   box-shadow: inset 0 1.5px 0 rgba(255,255,255,.55), inset 0 0 0 1px rgba(255,255,255,.22), 0 10px 30px rgba(0,0,0,.18);
-  opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease;
+  opacity: 0; transform: scale(.96); transition: opacity .18s ease, transform .18s ease;
+  will-change: opacity, transform;   /* own compositor layer: focus no longer repaints the glass bar */
 }
 .app.focused .cell { opacity: 1; transform: scale(1); }
-.app.focused img { opacity: 1; transform: scale(1.06); }
-.app.missing img, .app.missing .label { opacity: .3; }
-.app .label { position: relative; color: #fff; font: 600 30px/1 -apple-system, 'Helvetica Neue', Arial, sans-serif; letter-spacing: .01em; text-shadow: 0 1px 6px rgba(0,0,0,.35); transition: transform .22s ease; }
-.app.focused .label { transform: scale(1.06); }
+.app.focused img { opacity: 1; }
+.app.missing img { opacity: .3; }
 
 /* Toast */
 #toast {
@@ -146,7 +159,7 @@ body {
 #auto-opts li + li { margin-left: 12px; }
 #auto-opts li.current { background: rgba(255,255,255,.28); }
 #auto-opts li.focused { background: rgba(255,255,255,.9); color: #111; transform: scale(1.06); }
-#thumbs { display: flex; flex-wrap: wrap; list-style: none; margin-top: 34px; width: 1368px; }
+#thumbs { display: flex; flex-wrap: wrap; list-style: none; margin-top: 34px; width: 1392px; max-height: 556px; overflow-y: auto; padding-right: 10px; }
 #thumbs li {
   position: relative; width: 256px; height: 144px; border-radius: 18px; overflow: hidden;
   margin: 0 22px 22px 0; transition: transform .18s ease, box-shadow .18s ease;
@@ -160,3 +173,51 @@ body {
 }
 #thumbs li.focused { transform: scale(1.08); box-shadow: 0 0 0 4px #fff, 0 16px 34px rgba(0,0,0,.45); z-index: 1; }
 .credit { font-size: 22px; opacity: .72; margin-top: 4px; height: 28px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* ---- date under the clock ---- */
+#date { display: none; margin-top: 8px; font-size: 27px; font-weight: 300; opacity: .9; }
+
+/* App cards shown as a name (no logo) */
+.app .label { position: relative; font-size: 30px; font-weight: 500; opacity: .92; padding: 0 10px; text-align: center; text-shadow: 0 1px 6px rgba(0,0,0,.4); }
+.app.focused .label { opacity: 1; }
+
+/* ---- weather, under the date ---- */
+.weather { display: flex; align-items: center; margin-top: 16px; font-size: 34px; font-weight: 300; }
+.weather[hidden] { display: none; }
+.wx-icon { display: inline-flex; width: 42px; height: 42px; margin-right: 12px; }
+.wx-icon svg { width: 42px; height: 42px; }
+#wx-temp { line-height: 1; }
+#wx-place { font-size: 24px; opacity: .72; margin-left: 14px; align-self: center; }
+
+/* ---- settings as a vertical menu ---- */
+#setmenu { list-style: none; margin-top: 30px; }
+#setmenu li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; height: 68px; border-radius: 20px; font-size: 29px;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+#setmenu li + li { margin-top: 6px; }
+#setmenu .s-val { font-weight: 500; opacity: .9; }
+#setmenu li.focused { background: rgba(255,255,255,.92); color: #111; transform: scale(1.02); }
+#setmenu li.focused .s-val { opacity: 1; }
+.sheet .hint { margin-top: 22px; }
+
+/* ---- dock editor: scrollable list of installed apps ---- */
+#appcatalog { list-style: none; margin-top: 26px; max-height: 604px; overflow-y: auto; padding-right: 8px; }
+.catrow {
+  display: flex; align-items: center; padding: 0 22px; height: 66px; border-radius: 18px; font-size: 28px;
+  transition: background .14s ease, color .14s ease;
+}
+.catrow + .catrow { margin-top: 4px; }
+.cat-check {
+  flex: 0 0 34px; width: 34px; height: 34px; margin-right: 20px; border-radius: 9px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.5);
+}
+.catrow.on .cat-check {
+  background: #4caf50 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.2 4.2L19 7' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 24px no-repeat;
+  box-shadow: none;
+}
+.cat-name { flex: 1 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cat-pos { flex: 0 0 auto; margin-left: 16px; font-size: 24px; opacity: .7; min-width: 28px; text-align: right; }
+.catrow.focused { background: rgba(255,255,255,.92); color: #111; }
+.catrow.focused .cat-pos { opacity: .85; }

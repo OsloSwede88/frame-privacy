@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
-        id="http://frame-privacy.invalid/launcher" version="0.2.0" viewmodes="maximized">
+        id="http://lovvik.no/frame-launcher" version="0.5.0" viewmodes="maximized">
     <tizen:application id="FrmLnchr01.FrameLauncher" package="FrmLnchr01" required_version="6.5"/>
     <tizen:profile name="tv-samsung"/>
     <name>Frame Launcher</name>
@@ -8,6 +8,9 @@
     <content src="index.html"/>
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable"
                    encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <access origin="https://api.open-meteo.com" subdomains="true"/>
 </widget>

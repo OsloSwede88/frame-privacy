@@ -1,8 +1,7 @@
 <!doctype html>
-<html lang="en">
+<html lang="nb">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'">
 <meta name="viewport" content="width=1920, height=1080">
 <title>Launcher</title>
 <link rel="stylesheet" href="css/style.css">
@@ -18,14 +17,19 @@
   <header class="clock">
     <div id="time">--:--</div>
     <div id="date"></div>
+    <div id="weather" class="weather" hidden>
+      <span id="wx-icon" class="wx-icon"></span>
+      <span id="wx-temp"></span>
+      <span id="wx-place"></span>
+    </div>
   </header>
 
   <nav class="corner">
-    <button class="pill" id="wall-btn" aria-label="Wallpaper">
+    <button class="pill" id="wall-btn" aria-label="Bakgrunn">
       <div class="glass"></div>
       <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M4 5.5h16v13H4z"/><path fill="currentColor" d="M5.5 17l4.5-5.5 3.2 3.8 2.3-2.6 3 4.3z"/><circle cx="15.8" cy="9" r="1.6" fill="currentColor"/></svg>
     </button>
-    <button class="pill" id="settings-btn" aria-label="Settings">
+    <button class="pill" id="settings-btn" aria-label="Innstillinger">
       <div class="glass"></div>
       <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.7 7.7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
     </button>
@@ -38,12 +42,33 @@
 
   <div id="toast"></div>
 
+  <!-- Settings: a vertical menu navigated with up/down, OK to change, Back to close -->
   <div id="settings" class="overlay" hidden>
     <div class="sheet">
       <div class="glass"></div>
-      <h2>Settings</h2>
-      <p class="hint">Version 0.2. Back closes.</p>
-      <ul id="resolved"></ul>
+      <h2>Innstillinger</h2>
+      <ul id="setmenu">
+        <li data-act="dock"><span class="s-label">Rediger meny</span><span class="s-val">OK</span></li>
+        <li data-act="clock"><span class="s-label">Klokke</span><span class="s-val" id="s-clock"></span></li>
+        <li data-act="seconds"><span class="s-label">Sekunder</span><span class="s-val" id="s-seconds"></span></li>
+        <li data-act="date"><span class="s-label">Vis dato</span><span class="s-val" id="s-date"></span></li>
+        <li data-act="weather"><span class="s-label">Vis vær</span><span class="s-val" id="s-weather"></span></li>
+        <li data-act="loc"><span class="s-label">Værsted</span><span class="s-val" id="s-loc"></span></li>
+      </ul>
+      <p class="hint">OK endrer. På Værsted blar OK eller venstre-høyre mellom steder. Back lukker.</p>
+    </div>
+  </div>
+
+  <!-- Dock editor: all installed apps; OK adds/removes, left/right reorders, Back saves -->
+  <div id="dockedit" class="overlay" hidden>
+    <div class="sheet wide">
+      <div class="glass"></div>
+      <div class="sheet-head">
+        <h2>Rediger meny</h2>
+        <span class="auto-label">OK legg til / fjern &middot; &#9664; &#9654; flytt &middot; Back lagrer</span>
+      </div>
+      <ul id="appcatalog"></ul>
+      <p class="credit" id="dock-hint"></p>
     </div>
   </div>
 
@@ -51,9 +76,9 @@
     <div class="sheet wide">
       <div class="glass"></div>
       <div class="sheet-head">
-        <h2>Wallpaper</h2>
+        <h2>Bakgrunn</h2>
         <div class="auto">
-          <span class="auto-label">Switch automatically</span>
+          <span class="auto-label">Bytt automatisk</span>
           <ul id="auto-opts"></ul>
         </div>
       </div>
@@ -62,8 +87,8 @@
     </div>
   </div>
 </div>
-<script src="js/apps.js"></script>
 <script src="js/wallpapers.js"></script>
+<script src="js/apps.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
