@@ -21,6 +21,14 @@ rm.samsungqbe.com
 # Smart Hub app recommendations feed (optional; Smart Hub itself still works)
 osb-apps.samsungqbe.com
 #
+# Firmware auto-update / FOTA (OPTIONAL: block only if you want to pin the firmware,
+# e.g. to keep root and debloat from being undone by a Samsung update). This is the
+# firmware delivery (OSP) domain, separate from app updates, which keep working.
+# Verified on TQ43LS03BGUXXC/1720.7: fota-cloud-dn.ospserver.net resolved to a real
+# Samsung CDN IP (23.1.99.11) before blocking. A manual update check from the TV menu
+# will then fail to find a server. Re-allow this to update again.
+ospserver.net
+#
 # DO NOT BLOCK (breaks Smart Hub, app installs or updates):
 #   osb.samsungqbe.com, gpm.samsungqbe.com, cdn.samsungcloudsolution.com
 # Not blocked on purpose: samsungcloud.tv as a whole (Samsung TV Plus may use other hosts there).
