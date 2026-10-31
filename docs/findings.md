@@ -156,6 +156,12 @@ resumes those services' **local** processing; none of them can exfiltrate, becau
 destinations stay blocked at the router. Standby/wake does not lose the masks; only a full
 restart, power cut or firmware update does.
 
+A firmware update is the worst case: it can also reset the persistent changes (app-registry
+disables, any tuner disable, launcher-as-Home). To stop the TV updating itself and undoing the
+work, block Samsung's firmware domain `ospserver.net` at the router (see
+[router.md](router.md#pin-the-firmware-block-auto-updates--optional)). It is separate from the
+app-update servers, so apps keep working.
+
 Why plain systemd persistence does not work (and the rootfs route is unsafe):
 
 - The only writable systemd unit paths are under `/run`, which is wiped on every boot. `/etc`

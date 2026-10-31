@@ -56,3 +56,33 @@ UNREACHABLE instead of being counted as blocking. It ends with `ALL OK` or `NOT 
 test a fallback DNS server on its own (see point 2 above). If your filter answers
 with a different block address, add it to `SINKHOLES` in the script. Without root: watch the
 router's DNS log for the TV.
+
+## Pin the firmware (block auto-updates) — optional
+
+A Samsung firmware update can undo everything you changed on the TV: the app-registry disables,
+the tuner disable, and launcher-as-Home all live in the `/opt` registry, which an update may
+reset (the router layer survives, the TV-side changes may not). If you have rooted and debloated
+the set, you usually want to stop the TV updating itself.
+
+Block `ospserver.net`. That is Samsung's firmware (OSP/FOTA) delivery domain, and it is
+**separate** from the app-update and Smart Hub servers, so apps keep installing and updating.
+Verified on TQ43LS03BGUXXC / 1720.7: `fota-cloud-dn.ospserver.net` resolved to a real Samsung
+CDN IP (`23.1.99.11`) before, and to the UniFi sinkhole after, while `cdn.samsungcloudsolution.com`
+(apps) still resolved.
+
+- **UniFi:** add `ospserver.net` to the same per-device Content Filter rule that holds the
+  privacy blocklist (Settings → CyberSecure → Content Filter → the TV's rule → Blocklist). It is
+  already in `../blocklist/samsung-tv-privacy.txt` under the firmware section. Edit it from the
+  cloud console `unifi.ui.com`; the local `https://192.168.0.1` page is a self-signed cert the
+  browser flags and some tools cannot script.
+- **Other resolvers:** block `ospserver.net` with subdomain coverage (AdGuard `||ospserver.net^`,
+  Pi-hole regex, NextDNS denylist), same as the privacy domains.
+- **Close the encrypted-DNS bypass:** if the TV ever uses DoT (port 853) it could resolve the
+  firmware host around the DNS block. Add the port-853 drop rule from the UniFi section above,
+  with the TV's MAC as source. (Port-53 DNS is already redirected to the filter.)
+
+Verify from the TV (root): `nslookup fota-cloud-dn.ospserver.net` should return your filter's
+block address, and a control host such as `cdn.samsungcloudsolution.com` should still resolve.
+
+To update deliberately later, remove `ospserver.net` from the rule, update, then re-apply the
+registry changes (firmware updates are rare and not reversible once applied).
